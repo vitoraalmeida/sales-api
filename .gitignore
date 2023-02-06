@@ -1,0 +1,27 @@
+# binários
+app/services/sales-api/sales-api
+
+# Object files compilados
+*.o
+*.a
+*.so
+
+# pastas de testes e Object files
+_obj
+_test
+
+# arquivos de editor
+.idea/
+*.iml
+*.swp
+
+
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+*.test
+
+*.out

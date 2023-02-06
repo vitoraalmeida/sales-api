@@ -1,10 +1,18 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-resources:
 # indica em que diretório ele vai olhar o outro arquivo kustomization.yaml
 # para saber em qual arquivo o patch vai ser aplicado
+resources:
 - ../../base/sales-pod/
-patchesStrategicMerge:
 # indica qual patch será aplicado
 # vai colocar tudo que tem no patch que não tem no base
+patchesStrategicMerge:
 - ./kind-sales-api-patch.yaml
+# images permite colocar um nome que representa uma imagem generica
+# e então podemos atualizar em apenas um lugar a versão e todos os lugares
+# usarão a versão apropriada
+# O newTag será alterado quando alterarmos a VERSION no makefile, executando kustomize edit
+images:
+- name: sales-api-image
+  newName: sales-api-amd64
+  newTag: "1.0"

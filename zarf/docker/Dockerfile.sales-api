@@ -7,7 +7,7 @@ ARG BUILD_REF
 
 COPY . /service
 
-WORKDIR /service
+WORKDIR /service/app/services/sales-api
 # faz o build da aplicação conforme o ambiente que se quer
 #ldflags são flags para interagir com o linker. -X permite acessar variáveis nos programas
 RUN go build -ldflags "-X main.build=${BUILD_REF}"
@@ -17,7 +17,7 @@ RUN go build -ldflags "-X main.build=${BUILD_REF}"
 FROM alpine:3.14
 ARG BUILD_DATE
 ARG BUILD_REF
-COPY --from=build_sales-api /service /service
+COPY --from=build_sales-api /service/app/services/sales-api/sales-api /service/sales-api
 WORKDIR /service
 CMD ["./sales-api"]
 
