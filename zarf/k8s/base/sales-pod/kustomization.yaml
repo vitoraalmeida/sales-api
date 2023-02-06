@@ -1,0 +1,7 @@
+# define sobre qual arquivo o kustomize irá agir para adicionar/patch
+# as configurações que podem variar de acordo com o ambiente que queremos
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  # indica sobre qual arquivo de deployment ele vai agir
+  - ./base-sales-api.yaml

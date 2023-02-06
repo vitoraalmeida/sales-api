@@ -1,0 +1,29 @@
+# vai definir, quando o deploy for no kind, as seguintes definições
+# une o conteudo desse arquivo com o base-sales-api.yaml 
+# definições específicas de como rodar, quantas replicas, quanto de recurso
+# usar agora poderá ser feito a depender do ambiente
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sales-pod
+  namespace: sales-system
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: sales
+  template:
+    metadata:
+      labels:
+        app: sales
+    spec:
+      containers:
+        - name: sales-api
+          resources:
+            limits:
+              cpu: "2000m"
+            requests:
+              cpu: "1000m"
+
