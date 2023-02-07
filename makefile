@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 run:
-	go run main.go
+	go run app/services/sales-api/main.go | go run app/tooling/logfmt/main.go
 build:
 	#ldflags são flags para interagir com o linker. -X permite acessar variáveis nos programas
 	go build -ldflags "-X main.build=local"  # altere a variável build no pacote main para "local"
@@ -53,7 +53,7 @@ kind-status-sales:
 	kubectl get pods -o wide --watch
 
 kind-logs:
-	kubectl logs -l app=sales --all-containers=true -f --tail=100
+	kubectl logs -l app=sales --all-containers=true -f --tail=100 | go run app/tooling/logfmt/main.go
 
 kind-describe:
 	kubectl describe pod -l app=sales

@@ -76,3 +76,36 @@ Permite que possamos saber como estão definidos, go to definition, documentaç�
 #### ZARF
 
 Configuração para rodar o projeto
+
+
+## Anotações durante o curso
+
+### Logs
+Logs devem ser legíveis e também é interessante ter logs estruturados caso
+seja desejável colocar os logs em outros lugares
+
+Códigos fundamentais (foundation) não devem gerar logs, business and application
+devem gerar logs.
+
+Logs são importantes para resolver problemas. Então devemos poder passar o
+logger pela aplicação onde precisarmos. Loggers devem estar explícitos e não 
+escondidos em context. Logs devem sinalizar, mas não devem gerar ruídos!
+
+Existem bons pacotes de logs, até mesmo na stdlib, mas o pacote de logs do 
+uber provê logs estruturados com a habilidade de poder fazê-los legíveis
+
+"go.uber.org/zap"
+"go.uber.org/zap/zapcore"
+
+### Configs
+
+Apenas main.go deve ter acesso às configurações durante o startup, nenhum outro
+pacote e em nenhum outro momento
+
+Menos é mais
+
+Devem existir bons defaults, passiveis de executar a aplicação de cara.
+
+Precisam ser passíveis de modificação pelo menos variáveis de ambiente ou pela
+CLI
+
