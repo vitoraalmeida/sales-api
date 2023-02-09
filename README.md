@@ -125,3 +125,13 @@ garantir que todo o trabalho seja terminado antes de fechar o servidor. Também
 é importante garantirmos que todas as goroutines relacionadas serão finalizadas
 para que não fiquem em execução zumbi (quando a goroutine main é finalizada, 
 mas as goroutines filhas não), pois consome recursos
+
+
+### Readiness e liveness
+
+Não são orientados ao negócio, mas são orientados a produção
+
+Readiness -> Podemos indicar que estamos prontos para receber tráfego
+Liveness -> Estamos executando 
+
+

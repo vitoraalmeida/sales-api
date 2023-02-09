@@ -137,9 +137,17 @@ func run(log *zap.SugaredLogger) error {
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 	// bloqueia a execução (main não termina) enquanto não tiver um dos sinais)
 
+	// handlers.APIMux retorna um handler que implementa o método ServerHTTP
+	log.Infow("startup", "status", "initializing API support")
+	apiMux := handlers.APIMux(handlers.APIMuxConfig{
+		Shutdown: shutdown,
+		Log:      log,
+	})
+
 	api := http.Server{
-		Addr:         cfg.Web.APIHost,
-		Handler:      nil,
+		Addr: cfg.Web.APIHost,
+		// Handler é to tipo http.Handler que é uma interface que possui o método ServerHTTP(ResponseWriter, *Request)
+		Handler:      apiMux,
 		ReadTimeout:  cfg.Web.ReadTimeout,
 		WriteTimeout: cfg.Web.WriteTimeout,
 		IdleTimeout:  cfg.Web.IdleTimeout,
