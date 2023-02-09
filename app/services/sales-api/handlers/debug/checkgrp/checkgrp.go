@@ -1,3 +1,5 @@
+// grupos (grp) nesse contexto são conjuntos de funções que lidam com requests
+// relacionados
 package checkgrp
 
 import (

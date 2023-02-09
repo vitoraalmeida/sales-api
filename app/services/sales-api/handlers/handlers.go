@@ -3,7 +3,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"expvar"
 	"net/http"
 	"net/http/pprof"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/dimfeld/httptreemux/v5"
 	"github.com/vitoraalmeida/sales-api/app/services/sales-api/handlers/debug/checkgrp"
+	"github.com/vitoraalmeida/sales-api/app/services/sales-api/handlers/v1/testgrp"
 	"go.uber.org/zap"
 )
 
@@ -28,10 +28,12 @@ func DebugStandardLibraryMux() *http.ServeMux {
 	return mux
 }
 
+// DebugMux registra rotas para debug
 // Envoltório com as rotas de infos da stdlib mais infos sobre readiness e liveness
 func DebugMux(build string, log *zap.SugaredLogger) http.Handler {
 	mux := DebugStandardLibraryMux()
 
+	// grupo de handlers referentes a checks (liveness, readiness)
 	chg := checkgrp.Handlers{
 		Build: build,
 		Log:   log,
@@ -48,6 +50,7 @@ type APIMuxConfig struct {
 	Log      *zap.SugaredLogger
 }
 
+// APIMux registra rotas relativas à API em sí
 func APIMux(cfg APIMuxConfig) *httptreemux.ContextMux {
 	// Em APIs, devemos retornar tipos concretos (ou seja, que possuem dados
 	// de fato), pois estamos interessados no valor que foi construído. Quem
@@ -55,16 +58,11 @@ func APIMux(cfg APIMuxConfig) *httptreemux.ContextMux {
 	// se ele quer tomar alguma ação mais genérica
 	mux := httptreemux.NewContextMux() // implementa ServerHTTP
 
-	h := func(w http.ResponseWriter, r *http.Request) {
-		status := struct {
-			Status string
-		}{
-			Status: "OK",
-		}
-		json.NewEncoder(w).Encode(status)
+	tgh := testgrp.Handlers{
+		Log: cfg.Log,
 	}
 
-	mux.Handle(http.MethodGet, "/test", h)
+	mux.Handle(http.MethodGet, "/v1/test", tgh.Test)
 
 	return mux
 }
