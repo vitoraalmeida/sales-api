@@ -10,9 +10,11 @@ import (
 	"os"
 
 	"github.com/dimfeld/httptreemux/v5"
+	"github.com/vitoraalmeida/sales-api/app/services/sales-api/handlers/debug/checkgrp"
 	"go.uber.org/zap"
 )
 
+// Envoltório para rotas de debug com informações fornecidas pelas stdlib
 func DebugStandardLibraryMux() *http.ServeMux {
 	mux := http.NewServeMux()
 
@@ -22,6 +24,21 @@ func DebugStandardLibraryMux() *http.ServeMux {
 	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
 	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 	mux.Handle("/debug/vars", expvar.Handler())
+
+	return mux
+}
+
+// Envoltório com as rotas de infos da stdlib mais infos sobre readiness e liveness
+func DebugMux(build string, log *zap.SugaredLogger) http.Handler {
+	mux := DebugStandardLibraryMux()
+
+	chg := checkgrp.Handlers{
+		Build: build,
+		Log:   log,
+	}
+
+	mux.HandleFunc("/debug/readiness", chg.Readiness)
+	mux.HandleFunc("/debug/liveness", chg.Liveness)
 
 	return mux
 }

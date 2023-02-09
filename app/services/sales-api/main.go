@@ -110,7 +110,7 @@ func run(log *zap.SugaredLogger) error {
 
 	// A função handlers.DebugStandardLibraryMux retorna um mux que escuta e serve todos os
 	// endpoints relacionados a debug. Isso inclui os endpoints da stdlib
-	debugMux := handlers.DebugStandardLibraryMux()
+	debugMux := handlers.DebugMux(build, log)
 
 	// Inicia o serviço que escuta por requisições de debug
 	// Se a goroutine main for finalizada sem que mate as goroutines que foram

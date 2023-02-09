@@ -1,7 +1,20 @@
+## Dependências do projeto:
+* Go >= 1.18
+* Make
+* Docker
+* Kind (Kubernetes in Docker)
+* Kubectl
+* kustomize (ferramenta para alterar arquivos yaml de recursos do k8s com base em determinados parâmetros
+
+### utilitários
+* expvarmon -> vizualização das infos disponibilizadas pelo expvar da stdlib
+
+## Sobre a estrutura da aplicação
+
 Não há consenso sobre qual é a forma mais apropriada para organizar um projeto
 em Go.
 
-Este projeto utiliza layers.
+Este projeto utiliza camadas.
 
 ```
 app
@@ -37,7 +50,9 @@ vendos
 zarf
 ```
 camadas posicionadas acima, importam camadas posicionados abaixo
+
 ####App layer: 
+
 inicia e desliga os serviços/tooling
 aceita input externo e provê output externo
 Os códigos não são reutilizáveis e não possuem imports entre pacotes que estão em App
