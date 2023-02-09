@@ -109,3 +109,19 @@ Devem existir bons defaults, passiveis de executar a aplicação de cara.
 Precisam ser passíveis de modificação pelo menos variáveis de ambiente ou pela
 CLI
 
+### Metricas e debug
+
+A stdlib provê pacotes para que possamos ver informções do estado interno da
+aplicação (alocações, uso de memória, GC etc)
+
+### Shutdown e agendamento do desligamento
+
+É importante que o servidor pare sozinho se algo inesperado acontecer ou mesmo
+se a aplicação for terminada deliberadamente (seja por um comando no terminal
+CTRL + C, ou um sinal do kubernetes para interromper o container SIGTERM)
+
+Se for um sinal deliberado, é importante que agendemos a finalização para 
+garantir que todo o trabalho seja terminado antes de fechar o servidor. Também
+é importante garantirmos que todas as goroutines relacionadas serão finalizadas
+para que não fiquem em execução zumbi (quando a goroutine main é finalizada, 
+mas as goroutines filhas não), pois consome recursos

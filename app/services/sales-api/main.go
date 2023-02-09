@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -64,10 +65,10 @@ func run(log *zap.SugaredLogger) error {
 			DebugHost string `conf:"default:0.0.0.0:4000"`
 			// timeouts razoáveis, mas os melhores são definidos com testes
 			// de carga, debugging, no uso
-			ReadTimeout     time.Duration `conf:"default:5s`
-			WriteTimeout    time.Duration `conf:"default:10s`
-			IdleTimeout     time.Duration `conf:"default:120s`
-			ShutdownTimeout time.Duration `conf:"default:20s`
+			ReadTimeout     time.Duration `conf:"default:5s"`
+			WriteTimeout    time.Duration `conf:"default:10s"`
+			IdleTimeout     time.Duration `conf:"default:120s"`
+			ShutdownTimeout time.Duration `conf:"default:20s"`
 		}
 	}{
 		Version: conf.Version{
@@ -111,6 +112,9 @@ func run(log *zap.SugaredLogger) error {
 	// endpoints relacionados a debug. Isso inclui os endpoints da stdlib
 	debugMux := handlers.DebugStandardLibraryMux()
 
+	// Inicia o serviço que escuta por requisições de debug
+	// Se a goroutine main for finalizada sem que mate as goroutines que foram
+	// inicializadas por ela, ficarão orfãns e não serão finalizadas
 	go func() {
 		// ao inves de passar debugMux, poderiamos passar o http.DefaultServeMux
 		// e importar o http/pprof para registrar os endpoints de debug e profiling
@@ -126,13 +130,68 @@ func run(log *zap.SugaredLogger) error {
 	}()
 
 	// ======================================================================
-	// App shutdown
+	// Start API service
 	shutdown := make(chan os.Signal, 1)
 	// SIGINT é enviado por CTRL+C e SIGTERM é o sinal que o K8s envia para
 	// finalizar a execução dos serviços
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 	// bloqueia a execução (main não termina) enquanto não tiver um dos sinais)
-	<-shutdown
+
+	api := http.Server{
+		Addr:         cfg.Web.APIHost,
+		Handler:      nil,
+		ReadTimeout:  cfg.Web.ReadTimeout,
+		WriteTimeout: cfg.Web.WriteTimeout,
+		IdleTimeout:  cfg.Web.IdleTimeout,
+		ErrorLog:     zap.NewStdLog(log.Desugar()),
+	}
+
+	// assim que api.Shutdown é chamado, em caso de signals, api.ListenAndServe
+	// retorna, então o retorno entra no canal. Como só tem espaço para uma
+	// informação no canal, o envio da mensagem (serverErrors <- api.ListenAndServe)
+	// ocorre antes da recepção. Então o case err := <-serverErrors não serã
+	// selecionado, pois já estamos no caso seguinte, fazendo com que a goroutine
+	// que inicia o recebimento de tráfego também seja finalizada e não fique
+	// em execução pra sempre, zumbi
+	serverErrors := make(chan error, 1)
+
+	// começa a processar tráfego na porta 3000 (serviço principal)
+	go func() {
+		log.Infow("startup", "status", "api router started", "host", api.Addr)
+		// cada vez que chegar uma request uma goroutine filha desta será iniciada
+		// para lidar com a requisição
+		// se algum erro na goroutine filha acontecer, será introduzido no canal
+		// serverErrors, então a goroutine main saberá
+		serverErrors <- api.ListenAndServe()
+	}()
+
+	select {
+	// se ocorrer um erro que não foi esperado, irrecuperável
+	case err := <-serverErrors:
+		// pode parar o servidor de vez pq não foi um erro esperado
+		return fmt.Errorf("Server error: %w", err)
+	// caso seja um sinal esperado
+	case sig := <-shutdown:
+		log.Infow("shutdown", "status", "shutdown started", "signal", sig)
+		defer log.Infow("shutdown", "status", "shutdown complete", "signal", sig)
+
+		// agenda a finalização da aplicação com base no timeout definido para
+		// que não esperemos para sempre
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.Web.ShutdownTimeout)
+		defer cancel()
+
+		// api.Shutdown tenta finalizar o serviço de forma controlada (gracefully)
+		// fecha os listeners para não receber mais requests e espera todo o trabalho,
+		// que estiver sendo feito ser finalizado. Mas se o tempo que foi estipulado
+		// no contexto chegar ao fim, retorna um erro
+		if err := api.Shutdown(ctx); err != nil {
+			// retornando erro, termina imediatamente o serviço
+			api.Close()
+			return fmt.Errorf("could not stop the server gracefully", err)
+		}
+
+	}
+
 	return nil
 }
 
