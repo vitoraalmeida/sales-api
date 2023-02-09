@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"runtime"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ardanlabs/conf"
+	"github.com/vitoraalmeida/sales-api/app/services/sales-api/handlers"
 	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -59,7 +61,7 @@ func run(log *zap.SugaredLogger) error {
 		Web struct {
 			// default definem zero-values personalizados para os campos no struct
 			APIHost   string `conf:"default:0.0.0.0:3000"`
-			DebugHost string `conf:"default:0.0.0.0:3000"`
+			DebugHost string `conf:"default:0.0.0.0:4000"`
 			// timeouts razoáveis, mas os melhores são definidos com testes
 			// de carga, debugging, no uso
 			ReadTimeout     time.Duration `conf:"default:5s`
@@ -102,6 +104,28 @@ func run(log *zap.SugaredLogger) error {
 	log.Infow("startup", "config", out)
 
 	// ======================================================================
+	// Start debug service
+	log.Infow("startup", "status", "debug router started", "host", cfg.Web.DebugHost)
+
+	// A função handlers.DebugStandardLibraryMux retorna um mux que escuta e serve todos os
+	// endpoints relacionados a debug. Isso inclui os endpoints da stdlib
+	debugMux := handlers.DebugStandardLibraryMux()
+
+	go func() {
+		// ao inves de passar debugMux, poderiamos passar o http.DefaultServeMux
+		// e importar o http/pprof para registrar os endpoints de debug e profiling
+		// automaticamente, pois o pacote faz isso na função init().
+		// O problema é que qualquer outro pacote que usamos pode incluir
+		// no defaultServeMux outros endpoints de debug que retornam informações
+		// do pprof sem que saibamos. Então é uma boa prática de segurança criamos um
+		// mux personalizado com os endpoints de debug, para que saibamos
+		// exatamente o que está sendo entregue de informações de debug
+		if err := http.ListenAndServe(cfg.Web.DebugHost, debugMux); err != nil {
+			log.Errorw("shutdown", "status", "debug router closed", "host", cfg.Web.DebugHost, "ERROR", err)
+		}
+	}()
+
+	// ======================================================================
 	// App shutdown
 	shutdown := make(chan os.Signal, 1)
 	// SIGINT é enviado por CTRL+C e SIGTERM é o sinal que o K8s envia para
@@ -128,26 +152,3 @@ func initLogger(service string) (*zap.SugaredLogger, error) {
 
 	return log.Sugar(), nil
 }
-
-/*
-	// define o número máximo que threads para o serviço
-	// baseado no que está disponível pela máquina ou quotas (k8s)
-	if _, err := maxprocs.Set(); err != nil {
-		fmt.Println("maxprocs: %w", err)
-		os.Exit(1)
-	}
-
-	// O número de CPUs disponíveis - o número de goroutines que podem rodar em paralelo
-	g := runtime.GOMAXPROCS(0)
-	log.Printf("starting sales build[%s] CPU[%d]", build, g)
-	defer log.Println("sales ended")
-
-	shutdown := make(chan os.Signal, 1)
-	// SIGINT é enviado por CTRL+C e SIGTERM é o sinal que o K8s envia para
-	// finalizar a execução dos serviços
-	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
-	// bloqueia a execução do main enquanto não vier um sinal na channel
-	<-shutdown
-
-	log.Println("stopping service")
-*/
