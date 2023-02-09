@@ -8,9 +8,9 @@ import (
 	"net/http/pprof"
 	"os"
 
-	"github.com/dimfeld/httptreemux/v5"
 	"github.com/vitoraalmeida/sales-api/app/services/sales-api/handlers/debug/checkgrp"
 	"github.com/vitoraalmeida/sales-api/app/services/sales-api/handlers/v1/testgrp"
+	"github.com/vitoraalmeida/sales-api/foundation/web"
 	"go.uber.org/zap"
 )
 
@@ -51,18 +51,27 @@ type APIMuxConfig struct {
 }
 
 // APIMux registra rotas relativas à API em sí
-func APIMux(cfg APIMuxConfig) *httptreemux.ContextMux {
-	// Em APIs, devemos retornar tipos concretos (ou seja, que possuem dados
-	// de fato), pois estamos interessados no valor que foi construído. Quem
-	// chama a API deve ter o direito de receber o valor concreto e decidir
-	// se ele quer tomar alguma ação mais genérica
-	mux := httptreemux.NewContextMux() // implementa ServerHTTP
+// router
+func APIMux(cfg APIMuxConfig) *web.App {
+	//constrói a web.App que vai conter todas as rotas
+	app := web.NewApp(
+		cfg.Shutdown,
+	)
+
+	// atrela as rotas da v1 na app
+	v1(app, cfg)
+
+	return app
+}
+
+// v1 agrupa as rotas relacionadas a versão 1. Registra os handlers
+// que são relativos à sua versão
+func v1(app *web.App, cfg APIMuxConfig) {
+	const version = "v1"
 
 	tgh := testgrp.Handlers{
 		Log: cfg.Log,
 	}
 
-	mux.Handle(http.MethodGet, "/v1/test", tgh.Test)
-
-	return mux
+	app.Handle(http.MethodGet, version, "/test", tgh.Test)
 }

@@ -149,4 +149,38 @@ Não são orientados ao negócio, mas são orientados a produção
 Readiness -> Podemos indicar que estamos prontos para receber tráfego
 Liveness -> Estamos executando 
 
+### Framework
 
+```
+                Req
+App -> (network) -> [http]----+
+                              |
+                            +- --+            Repassando a requisição diretamente
+                            |Mux |--->...     para a função Handler, não podemos
+             Handle <-------|    |--->...     adicionar contexto e temos que executar
+        +----------------+  +----+            funções auxiliares, acessórias, retornar
+        | +------------+ |                    erros dentro do mesmo local
+        | |   +----+   | |
+        | |   |    |   | |
+        | |   +----+   | |
+        | +------------+ |
+        +----------------+
+ 
+
+
+                Req
+App -> (network) -> [http]----+
+                              |
+                             App
+                            +- --+          Envolvendo a handler function em outra
+                            |Mux |--->...   camada podemos executar códigos antes 
+                    <-------|    |--->...   e depois da parte que lida com a requisição
+        +----------------+  +----+          podemos retornar erros da handler para 
+        |    Código      |                  a camada externa e lidar de formas diferentes
+        |   +-------+    |                  além de poder adicionar contexto nessa rota
+        |   |handler|    |                  compartilhar loggers, timeouts, channels
+        |   +-------+    |                  comuns pela aplicação
+        |    Código      |
+        +----------------+
+ 
+```
