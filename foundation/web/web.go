@@ -53,16 +53,9 @@ func (a *App) Handle(method string, group string, path string, handler Handler, 
 	h := func(w http.ResponseWriter, r *http.Request) {
 		// Mas dentro dela nós podemos invocar a função que usamos de fato
 		// para o processamento com todo o contexto que queremos
-
-		// PRE CODE PROCESSING
-		// logging Stared
 		if err := handler(r.Context(), w, r); err != nil {
-			// logging error - handle it
-			// ERROR HANDLING
 			return
 		}
-		// logging ended
-		// POST CODE PROCESSING
 	}
 
 	finalPath := path

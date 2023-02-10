@@ -10,6 +10,7 @@ import (
 
 	"github.com/vitoraalmeida/sales-api/app/services/sales-api/handlers/debug/checkgrp"
 	"github.com/vitoraalmeida/sales-api/app/services/sales-api/handlers/v1/testgrp"
+	"github.com/vitoraalmeida/sales-api/business/web/mid"
 	"github.com/vitoraalmeida/sales-api/foundation/web"
 	"go.uber.org/zap"
 )
@@ -56,6 +57,8 @@ func APIMux(cfg APIMuxConfig) *web.App {
 	//constrói a web.App que vai conter todas as rotas
 	app := web.NewApp(
 		cfg.Shutdown,
+		// quando desenvolvemos handlers, não precisamos mais loggar, pois o middleware já faz
+		mid.Logger(cfg.Log),
 	)
 
 	// atrela as rotas da v1 na app
